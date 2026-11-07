@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREEZE OTP | Reseller & Admin Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark: '#0B0F19', card: '#13182E', border: '#1E293B', purple: '#8B5CF6', purpleGlow: '#A78BFA', red: '#EF4444' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glow-purple { box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.3); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0B0F19; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-brand-dark text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-purple selection:text-white">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- Header Navigation -->
+    <header class="border-b border-brand-border bg-brand-card/50 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-purple to-indigo-600 flex items-center justify-center glow-purple">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wider bg-gradient-to-r from-white via-slate-200 to-brand-purpleGlow bg-clip-text text-transparent">FREEZE OTP</h1>
+                    <p id="panel-subtitle" class="text-xs text-slate-400 font-medium tracking-wide">VIRTUAL SMS & VERIFICATION PANEL</p>
+                </div>
+            </div>
+
+            <!-- Header Controls & Mode Switcher -->
+            <div class="flex items-center space-x-4">
+                <div id="user-balance-box" class="bg-brand-dark border border-brand-border px-4 py-2 rounded-xl flex items-center space-x-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Balance</p>
+                        <p id="user-balance-display" class="font-bold text-sm text-emerald-400">500.00 PKR</p>
+                    </div>
+                </div>
+                <button id="deposit-btn" onclick="openDepositModal()" class="bg-brand-purple hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold text-xs transition-all shadow-lg shadow-brand-purple/20">Deposit Funds</button>
+                <button onclick="toggleAdminPanel()" id="mode-switch-btn" class="bg-brand-border hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl font-semibold text-xs transition-all flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                    <span id="mode-btn-text">Admin Panel</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="fixed inset-0 z-50 bg-brand-dark/90 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-brand-purple/20 text-brand-purpleGlow flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-white">Admin Authentication</h3>
+                <p class="text-xs text-slate-400 mt-1">Enter master credentials to access management controls</p>
+            </div>
+            <form onsubmit="verifyAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Username</label>
+                    <input type="text" id="admin-user-input" required class="w-full bg-brand-dark border border-brand-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                    <input type="password" id="admin-pass-input" required class="w-full bg-brand-dark border border-brand-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple" placeholder="admin@@123">
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeAdminLogin()" class="w-1/2 bg-brand-border hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs transition-all">Cancel</button>
+                    <button type="submit" class="w-1/2 bg-brand-purple hover:bg-purple-600 text-white font-semibold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-brand-purple/20">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- USER PANEL VIEW -->
+    <main id="user-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+        <div class="lg:col-span-2 space-y-6">
+            <div id="announcement-banner" class="bg-brand-card border border-brand-border p-4 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 rounded-xl bg-brand-purple/10 text-brand-purpleGlow">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <p id="announcement-text" class="text-sm text-slate-300"><strong class="text-white">Instant SMS Verification:</strong> Select any service below, choose your country, and receive your OTP code live in seconds.</p>
+                </div>
+            </div>
+
+            <!-- Step 1: Select Service -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-7 h-7 rounded-lg bg-brand-purple/20 text-brand-purpleGlow flex items-center justify-center font-bold text-sm">1</div>
+                        <h2 class="font-bold text-base text-white">Select Application</h2>
+                    </div>
+                    <input type="text" id="service-search" oninput="filterServices()" placeholder="Search service..." class="w-48 bg-brand-dark border border-brand-border rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-purple">
+                </div>
+                <div id="services-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-72 overflow-y-auto pr-1 custom-scrollbar"></div>
+            </div>
+
+            <!-- Step 2: Country Pricing -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-7 h-7 rounded-lg bg-brand-purple/20 text-brand-purpleGlow flex items-center justify-center font-bold text-sm">2</div>
+                        <h2 id="selected-service-title" class="font-bold text-base text-white">WhatsApp Numbers & Pricing</h2>
+                    </div>
+                    <input type="text" id="country-search" oninput="filterCountries()" placeholder="Filter country..." class="w-40 bg-brand-dark border border-brand-border rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-purple">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-brand-border text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                                <th class="py-3 px-4">Country</th>
+                                <th class="py-3 px-4">Price</th>
+                                <th class="py-3 px-4">Available Stock</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="country-pricing-list" class="divide-y divide-brand-border/50 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Orders -->
+        <div class="space-y-6">
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-xl flex flex-col h-full min-h-[500px]">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-brand-border">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <h2 class="font-bold text-base text-white">Active Orders</h2>
+                    </div>
+                    <span id="active-count-badge" class="bg-brand-purple/10 text-brand-purpleGlow border border-brand-purple/20 text-xs font-bold px-2.5 py-1 rounded-lg">0 Active</span>
+                </div>
+                <div id="active-orders-container" class="flex-grow flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-brand-border rounded-xl">
+                    <p class="text-sm font-semibold text-slate-300">No active numbers requested</p>
+                    <p class="text-xs text-slate-500 mt-1">Select an app and buy a number to receive OTP.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ADMIN PANEL VIEW (Hidden by default) -->
+    <main id="admin-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow space-y-6 w-full hidden">
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-white">Admin Control Console</h2>
+                <p class="text-xs text-slate-400">Manage user deposits, live profit margins, and site configurations instantly.</p>
+            </div>
+            <button onclick="toggleAdminPanel()" class="bg-brand-purple hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-semibold">Switch to User Panel</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6">
+                <p class="text-xs text-slate-400 font-semibold mb-1">Profit Markup Margin</p>
+                <div class="flex items-center space-x-4 mt-3">
+                    <input type="range" id="markup-slider" min="0" max="100" value="40" oninput="updateMarkup(this.value)" class="w-full accent-brand-purple">
+                    <span id="markup-display" class="font-bold text-brand-purpleGlow text-sm">+40%</span>
+                </div>
+            </div>
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6">
+                <p class="text-xs text-slate-400 font-semibold mb-1">Website Maintenance Mode</p>
+                <div class="flex items-center justify-between mt-3">
+                    <span id="site-status-label" class="text-xs font-bold text-emerald-400">ONLINE (Active)</span>
+                    <button onclick="toggleSiteStatus()" id="status-toggle-btn" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold">Disable Site</button>
+                </div>
+            </div>
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6">
+                <p class="text-xs text-slate-400 font-semibold mb-1">Active User Balance Override</p>
+                <div class="flex space-x-2 mt-3">
+                    <input type="number" id="override-balance-val" value="500" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-1.5 text-xs text-white">
+                    <button onclick="overrideBalance()" class="bg-brand-purple text-white px-3 py-1.5 rounded-xl text-xs font-bold">Set</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Approval Queue -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-xl">
+            <h3 class="font-bold text-base text-white mb-4">Pending Deposit Requests (Easypaisa / JazzCash)</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-brand-border text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                            <th class="py-3 px-4">Req ID</th>
+                            <th class="py-3 px-4">Gateway</th>
+                            <th class="py-3 px-4">Amount</th>
+                            <th class="py-3 px-4">TID / Receipt</th>
+                            <th class="py-3 px-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-deposit-queue" class="divide-y divide-brand-border/50 text-sm">
+                        <tr><td colspan="5" class="py-4 text-center text-xs text-slate-500">No pending deposit requests</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Deposit Modal -->
+    <div id="deposit-modal" class="fixed inset-0 z-50 bg-brand-dark/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white">Deposit Funds</h3>
+                <button onclick="closeDepositModal()" class="text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Min deposit limit is <strong class="text-emerald-400">PKR 150</strong>. Transfer to Easypaisa (<code class="text-white">03366530650</code> / Muhammad Haneef) or JazzCash (<code class="text-white">03264712641</code> / Farzana Akram) and submit TID.</p>
+            <form onsubmit="submitDeposit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Select Gateway</label>
+                    <select id="deposit-gateway" class="w-full bg-brand-dark border border-brand-border rounded-xl px-4 py-2 text-sm text-white focus:outline-none">
+                        <option value="Easypaisa">Easypaisa (03366530650 - Muhammad Haneef)</option>
+                        <option value="JazzCash">JazzCash (03264712641 - Farzana Akram)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Amount (PKR)</label>
+                    <input type="number" id="deposit-amount" min="150" value="500" required class="w-full bg-brand-dark border border-brand-border rounded-xl px-4 py-2 text-sm text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Transaction ID (TID)</label>
+                    <input type="text" id="deposit-tid" placeholder="e.g. 9845231678" required class="w-full bg-brand-dark border border-brand-border rounded-xl px-4 py-2 text-sm text-white">
+                </div>
+                <button type="submit" class="w-full bg-brand-purple hover:bg-purple-600 text-white font-semibold py-2.5 rounded-xl text-xs transition-all">Submit Deposit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="border-t border-brand-border bg-brand-card/30 py-6 text-center text-xs text-slate-500">
+        <p>&copy; 2026 FREEZE OTP Panel. Automated Virtual Number Verification System.</p>
+    </footer>
+
+    <!-- All-in-One Controller Script -->
+    <script>
+        let userBalance = parseFloat(localStorage.getItem('freeze_balance')) || 500.00;
+        let profitMargin = parseFloat(localStorage.getItem('freeze_markup')) || 40;
+        let isAdminLoggedIn = localStorage.getItem('freeze_admin_auth') === 'true';
+        let isSiteOnline = localStorage.getItem('freeze_site_online') !== 'false';
+        let activeOrders = JSON.parse(localStorage.getItem('freeze_active_orders')) || [];
+        let depositRequests = JSON.parse(localStorage.getItem('freeze_deposit_requests')) || [];
+
+        const baseServices = [
+            { name: 'WhatsApp', icon: '💬', basePrice: 45, stock: 1420 },
+            { name: 'Telegram', icon: '✈️', basePrice: 30, stock: 980 },
+            { name: 'Google / Gmail', icon: '🌐', basePrice: 25, stock: 2450 },
+            { name: 'Facebook', icon: '👥', basePrice: 35, stock: 1120 },
+            { name: 'Instagram', icon: '📸', basePrice: 40, stock: 890 },
+            { name: 'TikTok', icon: '🎵', basePrice: 35, stock: 1340 }
+        ];
+
+        const baseCountries = [
+            { country: 'Pakistan', code: '+92', multiplier: 1.0 },
+            { country: 'United States', code: '+1', multiplier: 2.2 },
+            { country: 'United Kingdom', code: '+44', multiplier: 2.0 },
+            { country: 'India', code: '+91', multiplier: 0.9 }
+        ];
+
+        let currentActiveService = 'WhatsApp';
+
+        function calculatePrice(basePrice, multiplier) {
+            return Math.ceil(basePrice * multiplier * (1 + (profitMargin / 100)));
+        }
+
+        function updateBalanceDisplay() {
+            document.getElementById('user-balance-display').innerText = userBalance.toFixed(2) + ' PKR';
+            localStorage.setItem('freeze_balance', userBalance);
+        }
+
+        function toggleAdminPanel() {
+            if (!isAdminLoggedIn) {
+                document.getElementById('admin-login-modal').classList.remove('hidden');
+                document.getElementById('admin-login-modal').classList.add('flex');
+            } else {
+                switchView();
+            }
+        }
+
+        function closeAdminLogin() {
+            document.getElementById('admin-login-modal').classList.remove('flex');
+            document.getElementById('admin-login-modal').classList.add('hidden');
+        }
+
+        function verifyAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('admin-user-input').value;
+            const p = document.getElementById('admin-pass-input').value;
+            if (u === 'admin' && p === 'admin@@123') {
+                isAdminLoggedIn = true;
+                localStorage.setItem('freeze_admin_auth', 'true');
+                closeAdminLogin();
+                switchView();
+                showToast('Admin login successful!', 'success');
+            } else {
+                showToast('Invalid credentials (use admin / admin@@123)', 'error');
+            }
+        }
+
+        function switchView() {
+            const userView = document.getElementById('user-view');
+            const adminView = document.getElementById('admin-view');
+            const btnText = document.getElementById('mode-btn-text');
+
+            if (userView.classList.contains('hidden')) {
+                userView.classList.remove('hidden');
+                adminView.classList.add('hidden');
+                btnText.innerText = 'Admin Panel';
+                document.getElementById('panel-subtitle').innerText = 'VIRTUAL SMS & VERIFICATION PANEL';
+            } else {
+                userView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+                btnText.innerText = 'User Panel';
+                document.getElementById('panel-subtitle').innerText = 'ADMIN CONTROL CONSOLE';
+                renderAdminQueue();
+            }
+        }
+
+        function updateMarkup(val) {
+            profitMargin = parseFloat(val);
+            localStorage.setItem('freeze_markup', profitMargin);
+            document.getElementById('markup-display.innerText') = '+' + val + '%';
+            document.getElementById('markup-display').innerText = '+' + val + '%';
+            renderServices();
+            renderCountries(currentActiveService);
+        }
+
+        function overrideBalance() {
+            const val = parseFloat(document.getElementById('override-balance-val').value);
+            userBalance = val;
+            updateBalanceDisplay();
+            showToast('User balance updated to PKR ' + val, 'success');
+        }
+
+        function toggleSiteStatus() {
+            isSiteOnline = !isSiteOnline;
+            localStorage.setItem('freeze_site_online', isSiteOnline);
+            const lbl = document.getElementById('site-status-label');
+            const btn = document.getElementById('status-toggle-btn');
+            if (isSiteOnline) {
+                lbl.innerText = 'ONLINE (Active)';
+                lbl.className = 'text-xs font-bold text-emerald-400';
+                btn.innerText = 'Disable Site';
+                btn.className = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold';
+            } else {
+                lbl.innerText = 'OFFLINE (Maintenance)';
+                lbl.className = 'text-xs font-bold text-red-400';
+                btn.innerText = 'Enable Site';
+                btn.className = 'bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold';
+            }
+        }
+
+        function renderServices(filter = '') {
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = '';
+            baseServices.filter(s => s.name.toLowerCase().includes(filter.toLowerCase())).forEach(s => {
+                const isSelected = currentActiveService === s.name;
+                const price = calculatePrice(s.basePrice, 1.0);
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-xl border cursor-pointer transition-all flex items-center space-x-3 ${isSelected ? 'bg-brand-purple/10 border-brand-purple shadow-lg' : 'bg-brand-dark/50 border-brand-border'}`;
+                card.onclick = () => { currentActiveService = s.name; document.getElementById('selected-service-title').innerText = s.name + ' Numbers & Pricing'; renderServices(filter); renderCountries(s.name); };
+                card.innerHTML = `<span class="text-xl">${s.icon}</span><div class="overflow-hidden"><p class="font-bold text-xs text-white truncate">${s.name}</p><p class="text-[10px] text-emerald-400 font-semibold">From PKR ${price}</p></div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderCountries(serviceName, filter = '') {
+            const service = baseServices.find(s => s.name === serviceName) || baseServices[0];
+            const tbody = document.getElementById('country-pricing-list');
+            tbody.innerHTML = '';
+            baseCountries.filter(c => c.country.toLowerCase().includes(filter.toLowerCase())).forEach(c => {
+                const finalPrice = calculatePrice(service.basePrice, c.multiplier);
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-brand-dark/30 transition-colors';
+                row.innerHTML = `<td class="py-3 px-4 font-semibold text-slate-200">${c.country} <span class="text-xs text-slate-500">(${c.code})</span></td><td class="py-3 px-4 text-emerald-400 font-bold">PKR ${finalPrice}</td><td class="py-3 px-4 text-slate-300">${service.stock} available</td><td class="py-3 px-4 text-right"><button onclick="buyNumber('${c.country}', ${finalPrice})" class="bg-brand-purple/20 hover:bg-brand-purple text-brand-purpleGlow hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all">Buy Number</button></td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterServices() { renderServices(document.getElementById('service-search').value); }
+        function filterCountries() { renderCountries(currentActiveService, document.getElementById('country-search').value); }
+
+        function buyNumber(country, price) {
+            if (!isSiteOnline) { showToast('Website is currently in maintenance mode.', 'error'); return; }
+            if (userBalance < price) { showToast('Insufficient balance! Please deposit funds.', 'error'); openDepositModal(); return; }
+            userBalance -= price;
+            updateBalanceDisplay();
+            const newOrder = { id: 'ORD-' + Math.floor(1000 + Math.random() * 9000), service: currentActiveService, country: country, number: '+92 3' + Math.floor(100000000 + Math.random() * 900000000), price: price, status: 'Waiting for SMS', otp: '---' };
+            activeOrders.unshift(newOrder);
+            localStorage.setItem('freeze_active_orders', JSON.stringify(activeOrders));
+            renderActiveOrders();
+            showToast('Number purchased successfully!', 'success');
+            setTimeout(() => {
+                newOrder.otp = Math.floor(100000 + Math.random() * 900000).toString();
+                newOrder.status = 'Completed';
+                localStorage.setItem('freeze_active_orders', JSON.stringify(activeOrders));
+                renderActiveOrders();
+                showToast('OTP SMS received!', 'success');
+            }, 5000);
+        }
+
+        function renderActiveOrders() {
+            const container = document.getElementById('active-orders-container');
+            document.getElementById('active-count-badge').innerText = `${activeOrders.filter(o => o.status === 'Waiting for SMS').length} Active`;
+            if (activeOrders.length === 0) {
+                container.innerHTML = `<p class="text-sm font-semibold text-slate-300">No active numbers requested</p><p class="text-xs text-slate-500 mt-1">Select an app and buy a number to receive OTP.</p>`;
+                return;
+            }
+            container.className = 'flex-grow space-y-4 overflow-y-auto max-h-[500px] pr-1 custom-scrollbar';
+            container.innerHTML = '';
+            activeOrders.forEach(o => {
+                const card = document.createElement('div');
+                card.className = 'bg-brand-dark border border-brand-border p-4 rounded-xl space-y-2 text-left';
+                card.innerHTML = `<div class="flex justify-between items-center"><span class="text-xs font-bold text-brand-purpleGlow">${o.service} (${o.country})</span><span class="text-[10px] px-2 py-0.5 rounded font-semibold ${o.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}">${o.status}</span></div><div class="flex justify-between items-center bg-brand-card p-2 rounded border border-brand-border"><span class="font-mono text-sm font-bold text-white">${o.number}</span><button onclick="navigator.clipboard.writeText('${o.number}');showToast('Copied!', 'success');" class="text-xs text-slate-400 hover:text-white">Copy</button></div><div class="flex justify-between items-center text-xs"><span class="text-slate-400">OTP Code:</span><span class="font-mono font-bold text-base ${o.otp === '---' ? 'text-amber-400 animate-pulse' : 'text-emerald-400'}">${o.otp}</span></div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); document.getElementById('deposit-modal').classList.add('flex'); }
+        function closeDepositModal() { document.getElementById('deposit-modal').classList.remove('flex'); document.getElementById('deposit-modal').classList.add('hidden'); }
+
+        function submitDeposit(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('deposit-amount').value);
+            const tid = document.getElementById('deposit-tid').value;
+            const gateway = document.getElementById('deposit-gateway').value;
+            if (amount < 150) { showToast('Minimum deposit is PKR 150', 'error'); return; }
+            depositRequests.unshift({ id: 'DEP-' + Math.floor(1000 + Math.random() * 9000), gateway, amount, tid, status: 'Pending' });
+            localStorage.setItem('freeze_deposit_requests', JSON.stringify(depositRequests));
+            closeDepositModal();
+            showToast('Deposit request submitted! Awaiting admin approval.', 'success');
+        }
+
+        function renderAdminQueue() {
+            const tbody = document.getElementById('admin-deposit-queue');
+            tbody.innerHTML = '';
+            if (depositRequests.filter(d => d.status === 'Pending').length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-xs text-slate-500">No pending deposit requests</td></tr>`;
+                return;
+            }
+            depositRequests.filter(d => d.status === 'Pending').forEach((d, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="py-3 px-4 font-mono text-xs">${d.id}</td><td class="py-3 px-4 font-semibold text-slate-200">${d.gateway}</td><td class="py-3 px-4 text-emerald-400 font-bold">PKR ${d.amount}</td><td class="py-3 px-4 font-mono text-slate-300">${d.tid}</td><td class="py-3 px-4 text-right"><button onclick="approveDeposit('${d.id}')" class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white px-3 py-1 rounded-lg text-xs font-bold transition-all">Approve</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function approveDeposit(id) {
+            const req = depositRequests.find(d => d.id === id);
+            if (req) {
+                req.status = 'Approved';
+                userBalance += req.amount;
+                updateBalanceDisplay();
+                localStorage.setItem('freeze_deposit_requests', JSON.stringify(depositRequests));
+                renderAdminQueue();
+                showToast(`Approved PKR ${req.amount} deposit successfully!`, 'success');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const styles = { success: 'bg-brand-card border-emerald-500 text-emerald-400', error: 'bg-brand-card border-red-500 text-red-400', info: 'bg-brand-card border-brand-purple text-brand-purpleGlow' };
+            const toast = document.createElement('div');
+            toast.className = `border px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center space-x-3 transition-all ${styles[type]}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        renderServices();
+        renderCountries('WhatsApp');
+        renderActiveOrders();
+        updateBalanceDisplay();
+    </script>
+</body>
+</html>
